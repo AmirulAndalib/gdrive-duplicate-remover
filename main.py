@@ -73,9 +73,7 @@ def get_gdrive_api_client():
         # Save the credentials for the next run
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
-    service = build('drive', 'v3', credentials=creds)
-
-    return service
+    return build('drive', 'v3', credentials=creds)
 
 
 def fetch_files_from_gdrive(api_client):
@@ -116,10 +114,7 @@ def fetch_files_from_gdrive(api_client):
 
         next_page_token = results.get('nextPageToken', None)
         logger.info(f'next_page_token: {next_page_token}')
-        files = results.get('files', [])
-        if not files:
-            logger.info('No suitable files found in your Google Drive.')
-        else:
+        if files := results.get('files', []):
             for file in files:
                 if (file.get('md5Checksum') is not None and
                         file.get('trashed') is False and
@@ -130,6 +125,8 @@ def fetch_files_from_gdrive(api_client):
                         hash_map[md5_checksum] = [file]
                     else:
                         file_list.append(file)
+        else:
+            logger.info('No suitable files found in your Google Drive.')
         if next_page_token is None:
             break
 
@@ -186,8 +183,9 @@ def _produce_candidate_files_report(hash_map):
 def _produce_files_for_removal_report(hash_map):
     new_hash_map = {}
     for md5_checksum, file_list in hash_map.items():
-        new_list = [file for file in file_list if file.get(TO_REMOVE) is True]
-        if len(new_list) > 0:
+        if new_list := [
+            file for file in file_list if file.get(TO_REMOVE) is True
+        ]:
             new_hash_map[md5_checksum] = new_list
 
     report_file = os.path.join(REPORT_FOLDER, f'Files_To_Remove-{date}.log')
@@ -197,8 +195,9 @@ def _produce_files_for_removal_report(hash_map):
 def _produce_files_removed_report(hash_map):
     new_hash_map = {}
     for md5_checksum, file_list in hash_map.items():
-        new_list = [file for file in file_list if file.get(REMOVED) is True]
-        if len(new_list) > 0:
+        if new_list := [
+            file for file in file_list if file.get(REMOVED) is True
+        ]:
             new_hash_map[md5_checksum] = new_list
 
     report_file = os.path.join(REPORT_FOLDER, f'Files_Removed-{date}.log')
